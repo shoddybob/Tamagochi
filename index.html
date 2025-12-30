@@ -1,0 +1,602 @@
+ <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    <title>Mon Tamagotchi 🐣</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            transition: background 0.5s ease;
+        }
+
+        body.night {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        }
+
+        .tamagotchi {
+            background: #1a202c;
+            border-radius: 30px;
+            padding: 25px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            position: relative;
+        }
+
+        .screen {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 5px solid #2d3748;
+            text-align: center;
+            position: relative;
+            min-height: 400px;
+        }
+
+        body.night .screen {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+        }
+
+        .age {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.8);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        #pet {
+            font-size: 120px;
+            margin: 30px 0;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        #pet.bounce {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        #message {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 20px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        body.night #message {
+            color: #e2e8f0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .stat {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        body.night .stat {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .stat-name {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        body.night .stat-name {
+            color: #cbd5e0;
+        }
+
+        .bar {
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body.night .bar {
+            background: rgba(0,0,0,0.3);
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            border: none;
+            padding: 20px;
+            border-radius: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .feed { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .play { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+        .sleep { background: linear-gradient(135deg, #4299e1, #3182ce); }
+        .heal { background: linear-gradient(135deg, #f56565, #e53e3e); }
+        .reset { 
+            grid-column: span 2;
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            margin-top: 5px;
+        }
+
+        .dead #pet {
+            filter: grayscale(100%) brightness(0.3);
+        }
+
+        .install-banner {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2d3748;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            transition: bottom 0.3s ease;
+            z-index: 1000;
+            max-width: 90%;
+        }
+
+        .install-banner.show {
+            bottom: 20px;
+        }
+
+        .install-banner button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: #48bb78;
+        }
+
+        .footer {
+            margin-top: 15px;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="tamagotchi">
+        <div class="screen" id="screen">
+            <button class="theme-toggle" id="themeToggle">🌙</button>
+            <div class="age" id="age">0j</div>
+            <div id="pet">🐣</div>
+            <div id="message">Prends soin de moi ! 💚</div>
+            
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-name">🍖 FAIM</div>
+                    <div class="bar">
+                        <div class="bar-fill" id="hunger" style="width:100%; background:#f56565;">
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-name">😊 JOIE</div>
+                    <div class="bar">
+                        <div class="bar-fill" id="happiness" style="width:100%; background:#48bb78;">
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-name">❤️ SANTÉ</div>
+                    <div class="bar">
+                        <div class="bar-fill" id="health" style="width:100%; background:#ed8936;">
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="stat-name">⚡ ÉNERGIE</div>
+                    <div class="bar">
+                        <div class="bar-fill" id="energy" style="width:100%; background:#4299e1;">
+                            <span>100%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="feed" class="feed">🍖 Nourrir</button>
+            <button id="play" class="play">🎾 Jouer</button>
+            <button id="sleep" class="sleep">😴 Dormir</button>
+            <button id="heal" class="heal">💊 Soigner</button>
+            <button id="reset" class="reset">🔄 Recommencer</button>
+        </div>
+
+        <div class="footer">
+            Fait avec ❤️ par KevB
+        </div>
+    </div>
+
+    <div class="install-banner" id="installBanner">
+        📲 Installe cette app sur ton téléphone !
+        <button id="installBtn">Installer</button>
+    </div>
+
+    <!-- Sons -->
+    <audio id="soundFeed" preload="auto"></audio>
+    <audio id="soundPlay" preload="auto"></audio>
+    <audio id="soundSleep" preload="auto"></audio>
+    <audio id="soundHeal" preload="auto"></audio>
+
+    <script>
+        // ========== VARIABLES ==========
+        let hunger = 100;
+        let happiness = 100;
+        let health = 100;
+        let energy = 100;
+        let age = 0;
+        let isDead = false;
+        let gameTimer = null;
+        let petEmoji = '🐣';
+        let nightMode = false;
+        let deferredPrompt;
+
+        // ========== SONS (optionnel) ==========
+        function playSound(id) {
+            try {
+                const sound = document.getElementById(id);
+                sound.volume = 0.3;
+                sound.play().catch(() => {});
+            } catch(e) {}
+        }
+
+        // ========== SAUVEGARDE ==========
+        function saveGame() {
+            const data = {
+                hunger, happiness, health, energy, age, isDead, petEmoji, nightMode
+            };
+            localStorage.setItem('tamagotchiSave', JSON.stringify(data));
+        }
+
+        function loadGame() {
+            const data = localStorage.getItem('tamagotchiSave');
+            if (!data) return;
+
+            try {
+                const save = JSON.parse(data);
+                hunger = save.hunger || 100;
+                happiness = save.happiness || 100;
+                health = save.health || 100;
+                energy = save.energy || 100;
+                age = save.age || 0;
+                isDead = save.isDead || false;
+                petEmoji = save.petEmoji || '🐣';
+                nightMode = save.nightMode || false;
+                
+                if (nightMode) document.body.classList.add('night');
+            } catch(e) {
+                console.log('Erreur chargement');
+            }
+        }
+
+        // ========== AFFICHAGE ==========
+        function updateDisplay() {
+            document.getElementById('hunger').style.width = hunger + '%';
+            document.getElementById('hunger').querySelector('span').textContent = Math.round(hunger) + '%';
+            
+            document.getElementById('happiness').style.width = happiness + '%';
+            document.getElementById('happiness').querySelector('span').textContent = Math.round(happiness) + '%';
+            
+            document.getElementById('health').style.width = health + '%';
+            document.getElementById('health').querySelector('span').textContent = Math.round(health) + '%';
+            
+            document.getElementById('energy').style.width = energy + '%';
+            document.getElementById('energy').querySelector('span').textContent = Math.round(energy) + '%';
+            
+            document.getElementById('pet').textContent = petEmoji;
+            document.getElementById('age').textContent = Math.floor(age/24) + 'j';
+            
+            if (isDead) {
+                document.getElementById('screen').classList.add('dead');
+                document.getElementById('message').textContent = '💀 RIP... Clique Reset';
+                disableButtons();
+            }
+        }
+
+        function disableButtons() {
+            document.getElementById('feed').disabled = true;
+            document.getElementById('play').disabled = true;
+            document.getElementById('sleep').disabled = true;
+            document.getElementById('heal').disabled = true;
+        }
+
+        function enableButtons() {
+            document.getElementById('feed').disabled = false;
+            document.getElementById('play').disabled = false;
+            document.getElementById('sleep').disabled = false;
+            document.getElementById('heal').disabled = false;
+        }
+
+        // ========== ÉVOLUTION ==========
+        function updateEvolution() {
+            if (age < 24) {
+                petEmoji = '🐣'; // Bébé
+            } else if (age < 72) {
+                petEmoji = '🐥'; // Enfant
+            } else if (age < 168) {
+                petEmoji = '🐔'; // Adulte
+            } else if (age < 336) {
+                petEmoji = '🦆'; // Mature
+            } else {
+                petEmoji = '🦉'; // Sage
+            }
+        }
+
+        // ========== MODE NUIT ==========
+        function updateDayNight() {
+            const hourOfDay = age % 24;
+            if (hourOfDay >= 20 || hourOfDay < 6) {
+                document.body.classList.add('night');
+                document.getElementById('themeToggle').textContent = '☀️';
+            } else {
+                document.body.classList.remove('night');
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+        }
+
+        // ========== GAME LOOP ==========
+        function gameLoop() {
+            if (isDead) {
+                clearInterval(gameTimer);
+                return;
+            }
+
+            // Diminution stats
+            hunger = Math.max(0, hunger - 0.8);
+            happiness = Math.max(0, happiness - 0.6);
+            energy = Math.max(0, energy - 0.4);
+            
+            // Conséquences
+            if (hunger < 30 || happiness < 30) {
+                health = Math.max(0, health - 0.8);
+            }
+            
+            if (energy < 20) {
+                happiness = Math.max(0, happiness - 0.5);
+            }
+            
+            age += 0.1;
+
+            // Mort
+            if (health <= 0) {
+                isDead = true;
+                clearInterval(gameTimer);
+            }
+
+            updateEvolution();
+            updateDayNight();
+            updateDisplay();
+            saveGame();
+        }
+
+        // ========== BOUTONS ==========
+        function initButtons() {
+            document.getElementById('feed').onclick = function() {
+                if (isDead) return;
+                hunger = Math.min(100, hunger + 35);
+                happiness = Math.min(100, happiness + 10);
+                health = Math.min(100, health + 5);
+                document.getElementById('message').textContent = '😋 Miam miam ! Merci !';
+                document.getElementById('pet').classList.add('bounce');
+                setTimeout(() => document.getElementById('pet').classList.remove('bounce'), 500);
+                playSound('soundFeed');
+                updateDisplay();
+            };
+
+            document.getElementById('play').onclick = function() {
+                if (isDead) return;
+                if (energy < 20) {
+                    document.getElementById('message').textContent = '😴 Trop fatigué...';
+                    return;
+                }
+                happiness = Math.min(100, happiness + 30);
+                energy = Math.max(0, energy - 20);
+                hunger = Math.max(0, hunger - 10);
+                document.getElementById('message').textContent = '🎉 Yeeees ! Encore !';
+                document.getElementById('pet').classList.add('bounce');
+                setTimeout(() => document.getElementById('pet').classList.remove('bounce'), 500);
+                playSound('soundPlay');
+                updateDisplay();
+            };
+
+            document.getElementById('sleep').onclick = function() {
+                if (isDead) return;
+                document.getElementById('message').textContent = '😴 Zzzzz...';
+                playSound('soundSleep');
+                updateDisplay();
+                
+                setTimeout(() => {
+                    energy = Math.min(100, energy + 60);
+                    happiness = Math.min(100, happiness + 15);
+                    health = Math.min(100, health + 10);
+                    document.getElementById('message').textContent = '🌅 Bien dormi !';
+                    updateDisplay();
+                }, 2000);
+            };
+
+            document.getElementById('heal').onclick = function() {
+                if (isDead) return;
+                health = Math.min(100, health + 50);
+                happiness = Math.min(100, happiness + 20);
+                document.getElementById('message').textContent = '💊 Ça va mieux !';
+                playSound('soundHeal');
+                updateDisplay();
+            };
+
+            document.getElementById('reset').onclick = function() {
+                if (confirm('Recommencer avec un nouveau Tamagotchi ?')) {
+                    clearInterval(gameTimer);
+                    hunger = 100;
+                    happiness = 100;
+                    health = 100;
+                    energy = 100;
+                    age = 0;
+                    isDead = false;
+                    petEmoji = '🐣';
+                    document.getElementById('screen').classList.remove('dead');
+                    enableButtons();
+                    updateDisplay();
+                    startGame();
+                    document.getElementById('message').textContent = '👶 Nouveau départ !';
+                    saveGame();
+                }
+            };
+
+            // Toggle manuel mode nuit
+            document.getElementById('themeToggle').onclick = function() {
+                nightMode = !nightMode;
+                if (nightMode) {
+                    document.body.classList.add('night');
+                    this.textContent = '☀️';
+                } else {
+                    document.body.classList.remove('night');
+                    this.textContent = '🌙';
+                }
+                saveGame();
+            };
+        }
+
+        // ========== INSTALLATION PWA ==========
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').classList.add('show');
+        });
+
+        document.getElementById('installBtn').onclick = async function() {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                document.getElementById('installBanner').classList.remove('show');
+            }
+            
+            deferredPrompt = null;
+        };
+
+        // ========== DÉMARRAGE ==========
+        function startGame() {
+            clearInterval(gameTimer);
+            gameTimer = setInterval(gameLoop, 2000);
+        }
+
+        window.onload = function() {
+            loadGame();
+            initButtons();
+            updateDisplay();
+            startGame();
+            
+            if (!isDead) {
+                document.getElementById('message').textContent = '🎮 Prêt à jouer !';
+            }
+        };
+
+        // Éviter que la page se ferme par erreur
+        window.addEventListener('beforeunload', function(e) {
+            if (!isDead && age > 10) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
